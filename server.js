@@ -5,7 +5,6 @@ const wss = new WebSocket.Server({ port: port }, () => {
     console.log(`Signaling server started on port ${port}`);
 });
 
-// Room map matching a string key to an array of peer objects
 const rooms = new Map();
 
 wss.on('connection', (ws) => {
@@ -20,7 +19,6 @@ wss.on('connection', (ws) => {
             return;
         }
 
-        // Handle joining a room
         if (msg.type === 'join') {
             currentRoom = msg.room || 'default';
             peerId = msg.id;
@@ -30,7 +28,6 @@ wss.on('connection', (ws) => {
             }
             rooms.get(currentRoom).push({ id: peerId, ws: ws });
             
-            // Notify others
             rooms.get(currentRoom).forEach(peer => {
                 if (peer.id !== peerId) {
                     peer.ws.send(JSON.stringify({ type: 'peer_connected', id: peerId }));
@@ -38,7 +35,6 @@ wss.on('connection', (ws) => {
                 }
             });
         } 
-        // Relay WebRTC messages (offers, answers, candidates) to target peer
         else if (msg.to) {
             if (rooms.has(currentRoom)) {
                 const target = rooms.get(currentRoom).find(peer => peer.id === msg.to);
