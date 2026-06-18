@@ -1,20 +1,64 @@
-{
-  "name": "signaling_server",
-  "version": "1.0.0",
-  "description": "",
-  "main": "server.js",
-  "dependencies": {
-    "ws": "^7.5.9"
-  },
-  "devDependencies": {
-    "eslint": "^8.28.0",
-    "eslint-config-airbnb-base": "^14.2.1",
-    "eslint-plugin-import": "^2.23.4"
-  },
-  "scripts": {
-    "lint": "eslint server.js && echo \"Lint OK\" && exit 0",
-    "format": "eslint server.js --fix && echo \"Lint OK\" && exit 0"
-  },
-  "author": "Fabio Alessandrelli",
-  "license": "MIT"
-}
+const WebSocket = require('ws');
+
+const port = process.env.PORT || 9090;
+const wss = new WebSocket.Server({ port: port }, () => {
+    console.log(`Signaling server started on port ${port}`);
+});
+
+// Room map matching a string key to an array of peer objects
+const rooms = new Map();
+
+wss.on('connection', (ws) => {
+    let currentRoom = null;
+    let peerId = null;
+
+    ws.on('message', (message) => {
+        let msg;
+        try {
+            msg = JSON.parse(message);
+        } catch (e) {
+            return;
+        }
+
+        // Handle joining a room
+        if (msg.type === 'join') {
+            currentRoom = msg.room || 'default';
+            peerId = msg.id;
+            
+            if (!rooms.has(currentRoom)) {
+                rooms.set(currentRoom, []);
+            }
+            rooms.get(currentRoom).push({ id: peerId, ws: ws });
+            
+            // Notify others
+            rooms.get(currentRoom).forEach(peer => {
+                if (peer.id !== peerId) {
+                    peer.ws.send(JSON.stringify({ type: 'peer_connected', id: peerId }));
+                    ws.send(JSON.stringify({ type: 'peer_connected', id: peer.id }));
+                }
+            });
+        } 
+        // Relay WebRTC messages (offers, answers, candidates) to target peer
+        else if (msg.to) {
+            if (rooms.has(currentRoom)) {
+                const target = rooms.get(currentRoom).find(peer => peer.id === msg.to);
+                if (target) {
+                    msg.from = peerId;
+                    target.ws.send(JSON.stringify(msg));
+                }
+            }
+        }
+    });
+
+    ws.on('close', () => {
+        if (currentRoom && rooms.has(currentRoom)) {
+            rooms.set(currentRoom, rooms.get(currentRoom).filter(peer => peer.id !== peerId));
+            rooms.get(currentRoom).forEach(peer => {
+                peer.ws.send(JSON.stringify({ type: 'peer_disconnected', id: peerId }));
+            });
+            if (rooms.get(currentRoom).length === 0) {
+                rooms.delete(currentRoom);
+            }
+        }
+    });
+});
