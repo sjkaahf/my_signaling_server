@@ -1,14 +1,19 @@
 {
-  "name": "signaling_server",
+  "name": "neko-park-colyseus-server",
   "version": "1.0.0",
-  "description": "",
+  "description": "Colyseus Multiplayer Server for Neko Park",
   "main": "server.js",
-  "dependencies": {
-    "ws": "^7.5.9"
-  },
   "scripts": {
     "start": "node server.js"
   },
-  "author": "Fabio Alessandrelli",
-  "license": "MIT"
+  "dependencies": {
+    "@colyseus/schema": "^5.0.40",
+    "colyseus": "^0.18.9",
+    "cors": "^2.8.6",
+    "express": "^5.3.0",
+    "ws": "^7.5.13"
+  },
+  "engines": {
+    "node": ">=18"
+  }
 }
