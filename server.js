@@ -68,8 +68,8 @@ class NekoRoom extends colyseus.Room {
     this.setState(new NekoRoomState());
     this.state.roomCode = String(options.roomCode || "0000");
 
-    // 30 ticks/giây: cực mượt cho client nội suy, tiết kiệm băng thông tối đa
-    this.setPatchRate(1000 / 30);
+    // 60 ticks/giây: mượt mà tối đa chuẩn 60 FPS
+    this.setPatchRate(1000 / 60);
 
     // Lắng nghe cập nhật di chuyển từ người chơi
     this.onMessage("move", (client, data) => {
