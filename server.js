@@ -85,10 +85,15 @@ class NekoRoom extends colyseus.Room {
       if (typeof data.riderOffsetX === "number") p.riderOffsetX = data.riderOffsetX;
     });
 
+    this.isGameStarted = false;
+
     // Lắng nghe âm thanh / hiệu ứng cần phát tức thì cho các người chơi khác
     this.onMessage("sfx", (client, data) => {
       const p = this.state.players.get(client.sessionId);
       if (p && data && data.name) {
+        if (data.name === "start_game") {
+          this.isGameStarted = true;
+        }
         this.broadcast("sfx", { id: p.slotId, sessionId: client.sessionId, name: String(data.name) }, { except: client });
       }
     });
@@ -137,6 +142,7 @@ class NekoRoom extends colyseus.Room {
       id: assignedId,
       sessionId: client.sessionId,
       roomCode: this.state.roomCode,
+      isGameStarted: this.isGameStarted || false,
     });
 
     console.log(
