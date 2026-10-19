@@ -93,21 +93,33 @@ class NekoRoom extends colyseus.Room {
       }
     });
 
+    this.usedSlotsEver = new Set();
     console.log(`[NekoRoom] Phòng ${this.state.roomCode} đã được tạo!`);
   }
 
   onJoin(client, options) {
-    // Tìm slot ID nhỏ nhất chưa ai dùng (từ 1 đến 8)
     const usedIds = new Set();
     this.state.players.forEach((p) => usedIds.add(p.slotId));
 
-    let assignedId = 1;
-    for (let i = 1; i <= 8; i++) {
+    // Không chèn người mới vào ID 1 nếu ID 1 đã từng được dùng (để người có ID lớn nhất làm chủ phòng)
+    let assignedId = -1;
+    const startId = this.usedSlotsEver.has(1) ? 2 : 1;
+    for (let i = startId; i <= 8; i++) {
       if (!usedIds.has(i)) {
         assignedId = i;
         break;
       }
     }
+    if (assignedId === -1) {
+      for (let i = 1; i <= 8; i++) {
+        if (!usedIds.has(i)) {
+          assignedId = i;
+          break;
+        }
+      }
+    }
+    if (assignedId === -1) assignedId = 1;
+    this.usedSlotsEver.add(assignedId);
 
     const player = new Player();
     player.slotId = assignedId;
